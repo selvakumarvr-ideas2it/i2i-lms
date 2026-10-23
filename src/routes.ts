@@ -1,0 +1,26 @@
+export const ROUTES = {
+  login: '/login',
+
+  dashboard: '/dashboard',
+  learningPath: '/learning',
+  learningDay: (dayId = ':dayId') => `/learning/day/${dayId}`,
+  study: (id = ':id') => `/study/${id}`,
+  exercise: (id = ':id') => `/exercise/${id}`,
+  quiz: (id = ':id') => `/quiz/${id}`,
+  assignment: (id = ':id') => `/assignment/${id}`,
+  submissions: '/submissions',
+  profile: '/profile',
+  search: '/search',
+
+  adminDashboard: '/admin/dashboard',
+  adminTrainees: '/admin/trainees',
+  adminTrainee: (id = ':id') => `/admin/trainees/${id}`,
+  adminCourse: '/admin/course',
+  adminCourseDay: (id = ':id') => `/admin/course/day/${id}`,
+  adminQuizzes: '/admin/quizzes',
+  adminAssignments: '/admin/assignments',
+  adminSubmissions: '/admin/submissions',
+  adminEvaluations: '/admin/evaluations',
+  adminReports: '/admin/reports',
+  adminSettings: '/admin/settings',
+} as const

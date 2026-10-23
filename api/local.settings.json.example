@@ -1,0 +1,19 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "node",
+
+    "STORAGE_CONNECTION_STRING": "UseDevelopmentStorage=true",
+    "STORAGE_ACCOUNT_NAME": "",
+    "COURSE_CONTENT_CONTAINER": "course-content",
+    "DATASETS_CONTAINER": "datasets",
+
+    "LOCAL_DEV_ADMIN_OID": "local-admin-oid",
+    "LOCAL_DEV_ADMIN_NAME": "Local Admin",
+    "LOCAL_DEV_ADMIN_EMAIL": "powerbi.admin@ideas2it.com"
+  },
+  "Host": {
+    "CORS": "*"
+  }
+}

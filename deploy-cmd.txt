@@ -1,0 +1,379 @@
+Power BI for Developers — From SQL to Customer-Ready BI in 10 Days
+BI Cross-Skilling Accelerator — SQL/Full-Stack Developer → Power BI Developer
+
+
+Visualization Tools Training - Power BI ==> 
+Generate a crash course training plan for Frontend/Backend developers to cross skill to Visualization tools like Power BI
+- Focus on basics for them to understand visualization report development
+- Skills to quickly develop prototype to customers to showcase the requirement into reports
+- Skills to develop BI reports from scratch
+- Skills to utilize Claude to accelerate the report building
+- Skills to accelerate migration from existing legacy reports like MicroStrategy/Cognos
+
+
+Extract video clippings from https://www.youtube.com/watch?v=6oItwNWdmdM and embed into study material as per the topics. This should supporting add-on to the content we already have
+
+
+az ad app create --display-name "BI Visualization Accelerator API" --sign-in-audience AzureADMyOrg
+
+"appId": "5cb55798-f5fa-4405-bfea-bfa1b87589b"
+
+az group create -n rg-bi-viz-accelerator -l eastus
+
+
+Pass 1 — deploy with a throwaway placeholder (nothing is calling the API cross-origin yet, so the wrong CORS value is harmless at this point):
+
+
+az deployment group create -g rg-bi-viz-accelerator -f infra/main.bicep -p @infra/main.parameters.json
+Get the real value — only available now that the storage account exists and you've enabled static website hosting on it:
+
+
+STORAGE_ACCOUNT=$(az deployment group show -g rg-bi-viz-accelerator -n main --query properties.outputs.storageAccountName.value -o tsv)
+
+az storage blob service-properties update --account-name $STORAGE_ACCOUNT --auth-mode login --static-website --index-document index.html --404-document index.html
+
+az storage account show -n $STORAGE_ACCOUNT --query "primaryEndpoints.web" -o tsv
+# → e.g. https://biviz7xk2p9mqz.z13.web.core.windows.net
+
+https://bivizstyq67gc2er6uww.z13.web.core.windows.net/
+
+az deployment group create -g rg-bi-viz-accelerator -f infra/main.bicep -p @infra/main.parameters.json
+az deployment group create -g rg-bi-viz-accelerator -f main.bicep  -p @infra/main.parameters.json -p staticWebsiteOrigin=https://bivizstyq67gc2er6uww.z13.web.core.windows.net/
+Pass 2 — redeploy with that real value, which patches the Function App's CORS setting:
+
+
+az deployment group create -g rg-bi-viz-accelerator -f infra/main.bicep \
+  -p @infra/main.parameters.json -p staticWebsiteOrigin=https://biviz7xk2p9mqz.z13.web.core.windows.net
+The -p staticWebsiteOrigin=... after -p @file.json overrides just that one value from the file — you don't need to hand-edit the JSON each time, though you can if you'd rather have it committed for next time.
+
+Let me make the placeholder in the file itself less guessable-looking, since https://REPLACE.z13... reads like a real (if broken) URL you're meant to fill in with something you already know, when actually you can't know it yet:
+
+$FUNCTION_APP = az deployment group show -g rg-bi-viz-accelerator -n main --query properties.outputs.functionAppName.value -o tsv
+
+az storage blob upload-batch `--account-name bivizstyq67gc2er6uww --auth-mode login` -d '$web' -s dist --overwrite
+
+$FUNCTION_APP = az deployment group show -g rg-bi-viz-accelerator -n main --query properties.outputs.functionAppName.value -o tsv
+"VITE_API_BASE_URL=https://biviz-api.azurewebsites.net" | Out-File -FilePath .env.production -Encoding utf8
+
+npm run build
+
+az storage blob upload-batch `--account-name bivizstyq67gc2er6uww --auth-mode login ` -d '$web' -s dist --overwrite
+az storage blob upload-batch `--account-name bivizstyq67gc2er6uww --account-key o7oM7WuaC0VJuOr0QAgPcKH5Qpp/44h/haeV/lUTcgtGR7dR28osKn9vQhG4A+EYw6I/CoVa2GI4+AStrdvPGw== `  -d '$web' -s dist --overwrite
+bivizstyq67gc2er6uww
+b51cdd7c-89c0-4c9c-aab7-303cdf924b7c
+az storage account show -n bivizstyq67gc2er6uww --query id -o tsv
+
+az storage account keys list --account-name bivizstyq67gc2er6uww --query "[0].value" -o tsv
+
+
+az role assignment create --assignee b51cdd7c-89c0-4c9c-aab7-303cdf924b7c --role "Storage Blob Data Contributor" --scope /subscriptions/eb224ed6-0353-4c4d-84a7-fd5b2bb3bfd2/resourceGroups/rg-bi-viz-accelerator/providers/Microsoft.Storage/storageAccounts/bivizstyq67gc2er6uww
+
+Expand-Archive -Path ~/powerbi-accelerator.zip -DestinationPath .
+
+
+$env:STORAGE_ACCOUNT_NAME = 'bivizstyq67gc2er6uww'
+$env:STORAGE_ACCOUNT_NAME =
+npm run seed:course
+npm run seed:demo   # admin + 8 demo trainees + realistic progress/quiz/submission data
+
+
+$FUNCTION_APP = az deployment group show -g $RG -n main --query properties.outputs.functionAppName.value -o tsv
+func azure functionapp publish $FUNCTION_APP
+
+Invoke-RestMethod -Uri "https://biviz-api.azurewebsites.net/api/auth/login" -Method Post -Body (@{email='powerbi.admin@ideas2it.com'} | ConvertTo-Json) -ContentType "application/json"
+
+az account set --subscription b51cdd7c-89c0-4c9c-aab7-303cdf924b7c
+
+az functionapp deployment source config-zip --resource-group rg-bi-viz-accelerator --name biviz-api --src api-deploy.zip
+az functionapp config set --resource-group rg-bi-viz-accelerator --name biviz-api --linux-fx-version "Node|24"
+
+az storage container create   --account-name bivizstyq67gc2er6uww --auth-mode login   --name deployments
+
+$BLOB_NAME="api-deploy-$(date +%Y%m%d%H%M%S).zip"
+az storage blob upload   --account-name bivizstyq67gc2er6uww --auth-mode login   -c deployments -n "$BLOB_NAME" -f api-deploy.zip
+
+# (re-run the build/zip from before if you haven't already)
+cd api
+npm install
+npm run build
+rm -f ../api-deploy.zip
+zip -r ../api-deploy.zip dist node_modules host.json package.json
+cd ..
+
+# One-time: a private container to hold deployment packages
+az storage container create  --account-name bivizstyq67gc2er6uww --auth-mode login  --name deployments
+
+# Upload this build with a version-stamped name so re-deploys don't collide
+$BLOB_NAME="api-deploy-$(date +%Y%m%d%H%M%S).zip"
+az storage blob upload   --account-name bivizstyq67gc2er6uww --auth-mode login   -c deployments -n "$BLOB_NAME" -f api-deploy.zip
+
+# Long-lived read-only SAS (10 years) — WEBSITE_RUN_FROM_PACKAGE re-reads this URL
+# on every cold start/scale-out, so it can't be a short-lived token.
+$STORAGE_KEY=$(az storage account keys list   --account-name bivizstyq67gc2er6uww   --resource-group rg-bi-viz-accelerator --query "[0].value" -o tsv)
+
+$END_DATE=$(date -u -d "+10 years" '+%Y-%m-%dT%H:%MZ' 2>/dev/null || date -u -v+10y '+%Y-%m-%dT%H:%MZ')
+
+$SAS=$(az storage blob generate-sas   --account-name bivizstyq67gc2er6uww   --account-key "$STORAGE_KEY"   -c deployments -n "$BLOB_NAME"   --permissions r --https-only --expiry "$END_DATE" -o tsv)
+
+$BLOB_URL=$(az storage blob url   --account-name bivizstyq67gc2er6uww   -c deployments -n "$BLOB_NAME" -o tsv)
+
+az functionapp config appsettings set   --resource-group rg-bi-viz-accelerator   --name biviz-api   --settings "WEBSITE_RUN_FROM_PACKAGE=${BLOB_URL}?${SAS}"
+
+az functionapp restart --resource-group rg-bi-viz-accelerator --name biviz-api
+
+
+az functionapp config appsettings set   --resource-group rg-bi-viz-accelerator   --name biviz-api --settings "WEBSITE_RUN_FROM_PACKAGE=${BLOB_URL}?${SAS}"
+
+az functionapp restart --resource-group rg-bi-viz-accelerator --name biviz-api
+
+curl -i -X POST https://biviz-api.azurewebsites.net/api/auth/login   -H "Content-Type: application/json"   -d '{"email":"powerbi.admin@ideas2it.com"}'
+
+# 1. Confirm the app setting actually took, and matches what you expect
+az functionapp config appsettings list   --resource-group rg-bi-viz-accelerator --name biviz-api   --query "[?name=='WEBSITE_RUN_FROM_PACKAGE']"
+
+# 2. Confirm the SAS URL is actually fetchable (bypasses the Function App entirely —
+#    tests only whether the blob/SAS is valid)
+curl -I "${BLOB_URL}?${SAS}"
+
+# 3. Confirm the runtime actually applied
+az functionapp config show   --resource-group rg-bi-viz-accelerator --name biviz-api   --query "linuxFxVersion"
+
+# 4. Tail the live log stream and retry the curl in another terminal while this runs —
+#    this shows the actual startup error if the app is crash-looping
+az webapp log tail --resource-group rg-bi-viz-accelerator --name biviz-api
+
+
+az functionapp config set   --resource-group rg-bi-viz-accelerator   --name biviz-api   --linux-fx-version "Node|20"
+
+# Give it a minute for the container to actually come back, then check state directly
+az functionapp show   --resource-group rg-bi-viz-accelerator --name biviz-api   --query "{state:state, availabilityState:availabilityState}"
+
+az functionapp cors show   --resource-group rg-bi-viz-accelerator   --name biviz-api
+
+az functionapp cors remove   --resource-group rg-bi-viz-accelerator   --name biviz-api   --allowed-origins "https://bivizstyq67gc2er6uww.z13.web.core.windows.net/"
+
+az functionapp cors add   --resource-group rg-bi-viz-accelerator   --name biviz-api   --allowed-origins "https://bivizstyq67gc2er6uww.z13.web.core.windows.net"
+
+az functionapp cors show   --resource-group rg-bi-viz-accelerator   --name biviz-api
+
+curl -s -i -X POST https://biviz-api.azurewebsites.net/api/auth/login  -H "Content-Type: application/json"  -d '{"email":"powerbi.admin@ideas2it.com","password":"biviz2026@i2i"}'  --max-time 20
+
+Remove-Item "./powerbi-accelerator" -Recurse -Include *.*
+
+Expand-Archive -Path ~/powerbi-accelerator.zip -DestinationPath ./powerbi-accelerator
+Expand-Archive -Path ~/powerbi-accelerator.zip -DestinationPath ./powerbi-accelerator-v2
+cd ./powerbi-accelerator
+npm install
+npm run build
+
+cd api
+npm install
+npm run build
+
+$env:STORAGE_ACCOUNT_NAME = 'bivizstyq67gc2er6uww'
+npm run seed:course
+
+
+az storage entity insert --auth-mode login --account-name bivizstyq67gc2er6uww `
+  --table-name Users `
+  --entity PartitionKey=USER RowKey=selvakumar.rayappan@ideas2it.com `
+    id=selvakumar.rayappan@ideas2it.com email=selvakumar.rayappan@ideas2it.com `
+    name="selvakumar Rayappan" role=Trainee avatarInitials=FL `
+    joinedAt=2026-09-18T00:00:00.000Z cohort=BI-Visualization-Accelerator-2026-Q1
+
+az storage entity insert --auth-mode login --account-name bivizstyq67gc2er6uww `
+  --table-name Users `
+  --entity PartitionKey=USER RowKey=imran.nazirk@ideas2it.com `
+    id=imran.nazirk@ideas2it.com email=imran.nazirk@ideas2it.com `
+    name="Imran Nazirk" role=Trainee avatarInitials=IN `
+    joinedAt=2026-09-18T00:00:00.000Z cohort=BI-Visualization-Accelerator-2026-Q1
+
+
+az storage entity insert --auth-mode login --account-name bivizstyq67gc2er6uww `
+  --table-name Users `
+  --entity PartitionKey=USER RowKey=mohamed.jubair@ideas2it.com `
+    id=mohamed.jubair@ideas2it.com email=mohamed.jubair@ideas2it.com `
+    name="Mohamed Jubair" role=Trainee avatarInitials=MJ `
+    joinedAt=2026-09-18T00:00:00.000Z cohort=BI-Visualization-Accelerator-2026-Q1
+
+az storage entity insert --auth-mode login --account-name bivizstyq67gc2er6uww `
+  --table-name Users `
+  --entity PartitionKey=USER RowKey=praveenkumar.srinivasan@ideas2it.com `
+    id=praveenkumar.srinivasan@ideas2it.com email=praveenkumar.srinivasan@ideas2it.com `
+    name="Praveenkumar Srinivasan" role=Trainee avatarInitials=PS `
+    joinedAt=2026-09-18T00:00:00.000Z cohort=BI-Visualization-Accelerator-2026-Q1
+
+
+
+az storage entity insert --auth-mode login --account-name bivizstyq67gc2er6uww `
+  --table-name Users `
+  --entity PartitionKey=USER RowKey=karthik.subramani@ideas2it.com `
+    id=karthik.subramani@ideas2it.com email=karthik.subramani@ideas2it.com `
+    name="Karthik Subramani" role=Trainee avatarInitials=KS `
+    joinedAt=2026-09-18T00:00:00.000Z cohort=BI-Visualization-Accelerator-2026-Q1
+
+az storage entity insert --auth-mode login --account-name bivizstyq67gc2er6uww `
+  --table-name Users `
+  --entity PartitionKey=USER RowKey=naveenkumar@ideas2it.com `
+    id=naveenkumar@ideas2it.com email=naveenkumar@ideas2it.com `
+    name="Naveenkumar M" role=Trainee avatarInitials=NM `
+    joinedAt=2026-09-18T00:00:00.000Z cohort=BI-Visualization-Accelerator-2026-Q1
+
+az storage entity insert --auth-mode login --account-name bivizstyq67gc2er6uww `
+  --table-name Users `
+  --entity PartitionKey=USER RowKey=devaraj.venkatesan@ideas2it.com `
+    id=devaraj.venkatesan@ideas2it.com email=devaraj.venkatesan@ideas2it.com `
+    name="Devaraj Venkatesan" role=Trainee avatarInitials=DV `
+    joinedAt=2026-09-18T00:00:00.000Z cohort=BI-Visualization-Accelerator-2026-Q1
+
+
+
+Imran Nazirk <imran.nazirk@ideas2it.com>,
+Mohamed Jubair <mohamed.jubair@ideas2it.com>,
+Praveenkumar Srinivasan <praveenkumar.srinivasan@ideas2it.com>,
+Karthik S <karthik.subramani@ideas2it.com>,
+Naveen Kumar Manian <naveenkumar@ideas2it.com>,
+Vignesh S <vignesh.s@ideas2it.com>,
+Valanjefri Jeeva <valanjefri.jeeva@ideas2it.com>,
+Sharathvishaal Gunasekaran <sharathvishaal.gunasekaran@ideas2it.com>,
+Devaraj Venkatesan <devaraj.venkatesan@ideas2it.com>,
+Charan Lingeswaran <charan.lingeswaran@ideas2it.com>,
+
+Rohith Dhanabal <rohith.dhanabal@ideas2it.com>,
+GM MALIK <ghmohamad.malik@ideas2it.com>,
+Aabid Bin Farooq Ibni Ali <aabidbinfarooq.ibniali@ideas2it.com>,
+Gowtham P <gowtham.p@ideas2it.com>,
+Gautam <gautam.vijayan@ideas2it.com>
+
+az storage entity insert --auth-mode login --account-name bivizstyq67gc2er6uww `
+  --table-name Users `
+  --entity PartitionKey=USER RowKey=vignesh.s@ideas2it.com `
+    id=vignesh.s@ideas2it.com email=vignesh.s@ideas2it.com `
+    name="Vignesh S" role=Trainee avatarInitials=VS `
+    joinedAt=2026-09-18T00:00:00.000Z cohort=BI-Visualization-Accelerator-2026-Q1
+
+az storage entity insert --auth-mode login --account-name bivizstyq67gc2er6uww `
+  --table-name Users `
+  --entity PartitionKey=USER RowKey=valanjefri.jeeva@ideas2it.com `
+    id=valanjefri.jeeva@ideas2it.com email=valanjefri.jeeva@ideas2it.com `
+    name="Valanjefri Jeeva" role=Trainee avatarInitials=VS `
+    joinedAt=2026-09-18T00:00:00.000Z cohort=BI-Visualization-Accelerator-2026-Q1
+
+az storage entity insert --auth-mode login --account-name bivizstyq67gc2er6uww `
+  --table-name Users `
+  --entity PartitionKey=USER RowKey=sharathvishaal.gunasekaran@ideas2it.com `
+    id=sharathvishaal.gunasekaran@ideas2it.com email=sharathvishaal.gunasekaran@ideas2it.com `
+    name="Sharathvishaal Gunasekaran" role=Trainee avatarInitials=SG `
+    joinedAt=2026-09-18T00:00:00.000Z cohort=BI-Visualization-Accelerator-2026-Q1
+
+az storage entity insert --auth-mode login --account-name bivizstyq67gc2er6uww `
+  --table-name Users `
+  --entity PartitionKey=USER RowKey=charan.lingeswaran@ideas2it.com `
+    id=charan.lingeswaran@ideas2it.com email=charan.lingeswaran@ideas2it.com `
+    name="Charan Lingeswaran" role=Trainee avatarInitials=CL `
+    joinedAt=2026-09-18T00:00:00.000Z cohort=BI-Visualization-Accelerator-2026-Q1
+
+az storage entity insert --auth-mode login --account-name bivizstyq67gc2er6uww `
+  --table-name Users `
+  --entity PartitionKey=USER RowKey=rohith.dhanabal@ideas2it.com `
+    id=rohith.dhanabal@ideas2it.com email=rohith.dhanabal@ideas2it.com `
+    name="Rohith Dhanabal" role=Trainee avatarInitials=RD `
+    joinedAt=2026-09-18T00:00:00.000Z cohort=BI-Visualization-Accelerator-2026-Q1
+
+az storage entity insert --auth-mode login --account-name bivizstyq67gc2er6uww `
+  --table-name Users `
+  --entity PartitionKey=USER RowKey=ghmohamad.malik@ideas2it.com `
+    id=ghmohamad.malik@ideas2it.com email=ghmohamad.malik@ideas2it.com `
+    name="Ghmohamad Malik" role=Trainee avatarInitials=GM `
+    joinedAt=2026-09-18T00:00:00.000Z cohort=BI-Visualization-Accelerator-2026-Q1
+
+az storage entity insert --auth-mode login --account-name bivizstyq67gc2er6uww `
+  --table-name Users `
+  --entity PartitionKey=USER RowKey=ghmohamad.malik@ideas2it.com `
+    id=ghmohamad.malik@ideas2it.com email=ghmohamad.malik@ideas2it.com `
+    name="Ghmohamad Malik" role=Trainee avatarInitials=GM `
+    joinedAt=2026-09-18T00:00:00.000Z cohort=BI-Visualization-Accelerator-2026-Q1
+
+az storage entity insert --auth-mode login --account-name bivizstyq67gc2er6uww `
+  --table-name Users `
+  --entity PartitionKey=USER RowKey=aabidbinfarooq.ibniali@ideas2it.com `
+    id=aabidbinfarooq.ibniali@ideas2it.com email=aabidbinfarooq.ibniali@ideas2it.com `
+    name="Aabidbinfarooq Ibniali" role=Trainee avatarInitials=AI `
+    joinedAt=2026-09-18T00:00:00.000Z cohort=BI-Visualization-Accelerator-2026-Q1
+
+
+az storage entity insert --auth-mode login --account-name bivizstyq67gc2er6uww `
+  --table-name Users `
+  --entity PartitionKey=USER RowKey=gowtham.p@ideas2it.com `
+    id=gowtham.p@ideas2it.com email=gowtham.p@ideas2it.com `
+    name="Gowtham P" role=Trainee avatarInitials=GP `
+    joinedAt=2026-09-18T00:00:00.000Z cohort=BI-Visualization-Accelerator-2026-Q1
+
+az storage entity insert --auth-mode login --account-name bivizstyq67gc2er6uww `
+  --table-name Users `
+  --entity PartitionKey=USER RowKey=gautam.vijayan@ideas2it.com `
+    id=gautam.vijayan@ideas2it.com email=gautam.vijayan@ideas2it.com `
+    name="Gautam Vijayan" role=Trainee avatarInitials=GP `
+    joinedAt=2026-09-18T00:00:00.000Z cohort=BI-Visualization-Accelerator-2026-Q1
+
+az storage entity delete --auth-mode login --account-name bivizstyq67gc2er6uww `
+  --table-name Users `
+  --partition-key USER --row-key selvakumar.rayappan@ideas2it.com
+
+az storage entity delete --auth-mode login --account-name bivizstyq67gc2er6uww `
+  --table-name Users `
+  --partition-key USER --row-key gautam.vijayan@ideas2it.com
+
+az storage entity delete --auth-mode login --account-name bivizstyq67gc2er6uww `
+  --table-name Users `
+  --partition-key USER --row-key karthik.subramani@ideas2it.com
+
+az storage entity insert --auth-mode login --account-name bivizstyq67gc2er6uww `
+  --table-name Users `
+  --entity PartitionKey=USER RowKey=nataraj@ideas2it.com `
+    id=nataraj@ideas2it.com email=nataraj@ideas2it.com `
+    name="Nataraj" role=Trainee avatarInitials=NA `
+    joinedAt=2026-09-18T00:00:00.000Z cohort=BI-Visualization-Accelerator-2026-Q1
+
+az storage entity insert --auth-mode login --account-name bivizstyq67gc2er6uww `
+  --table-name Users `
+  --entity PartitionKey=USER RowKey=josephananth@ideas2it.com `
+    id=josephananth@ideas2it.com email=josephananth@ideas2it.com `
+    name="Joseph Ananth" role=Trainee avatarInitials=JA `
+    joinedAt=2026-09-18T00:00:00.000Z cohort=BI-Visualization-Accelerator-2026-Q1
+
+nataraj@ideas2it.com
+josephananth@ideas2it.com
+
+Vignesh S <vignesh.s@ideas2it.com>,
+Valanjefri Jeeva <valanjefri.jeeva@ideas2it.com>,
+Sharathvishaal Gunasekaran <sharathvishaal.gunasekaran@ideas2it.com>,
+Devaraj Venkatesan <devaraj.venkatesan@ideas2it.com>,
+Charan Lingeswaran <charan.lingeswaran@ideas2it.com>,
+Rohith Dhanabal <rohith.dhanabal@ideas2it.com>,
+GM MALIK <ghmohamad.malik@ideas2it.com>,
+Aabid Bin Farooq Ibni Ali <aabidbinfarooq.ibniali@ideas2it.com>,
+Gowtham P <gowtham.p@ideas2it.com>,
+Gautam <gautam.vijayan@ideas2it.com>
+
+Expand-Archive -Path ~/powerbi-accelerator.zip -DestinationPath ./powerbi-accelerator -Force
+
+
+cd ./powerbi-accelerator
+npm install
+npm run build
+
+cd api
+npm install
+npm run build
+
+$env:STORAGE_ACCOUNT_NAME = 'bivizstyq67gc2er6uww'
+npm run seed:course
+
+
+.\powerbi-accelerator\scripts\deploy-azure.ps1              # in Cloud Shell — both API and frontend
+az functionapp show --resource-group rg-bi-viz-accelerator --name biviz-api --query state
+
+.\powerbi-accelerator\scripts\deploy-azure.ps1 -SkipApi
+.\powerbi-accelerator\scripts\deploy-azure.ps1 -SkipFrontend   # API only
+

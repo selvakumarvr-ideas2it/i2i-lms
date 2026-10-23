@@ -1,0 +1,28 @@
+{
+  "name": "powerbi-accelerator-api",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "node esbuild.config.mjs",
+    "watch": "node esbuild.config.mjs --watch",
+    "prestart": "npm run build",
+    "start": "func start",
+    "typecheck": "tsc --noEmit",
+    "seed:course": "npm run build && node dist/scripts/seed-course-content.js",
+    "seed:demo": "npm run build && node dist/scripts/seed-demo-trainees.js",
+    "delete:demo": "npm run build && node dist/scripts/delete-demo-trainees.js"
+  },
+  "dependencies": {
+    "@azure/data-tables": "^13.3.1",
+    "@azure/functions": "^4.7.2",
+    "@azure/identity": "^4.6.0",
+    "@azure/storage-blob": "^12.26.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.3",
+    "esbuild": "^0.24.2",
+    "typescript": "~6.0.2"
+  }
+}
